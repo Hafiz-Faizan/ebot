@@ -1,9 +1,33 @@
 'use client';
 import React, { useState } from 'react';
+import { auth } from "../../components/firebase";
+import { useRouter } from "next/navigation"; // Using Next.js router for navigation
 
 const S4FinanceServicesSection = (params) => {
   const service = (params.params.Service);
   const [openAccordions, setOpenAccordions] = useState({});
+  const router = useRouter(); // Initialize the router
+
+
+
+  const handleAddToCart = (price) => {
+    // Get the current cart total from localStorage
+    const currentCart = localStorage.getItem("cartTotal");
+    const newCartTotal = currentCart ? parseFloat(currentCart) + price : price;
+
+    // Update the localStorage with the new cart total
+    localStorage.setItem("cartTotal", newCartTotal);
+
+    // Optional: Add the item details (if needed)
+    const currentItems = JSON.parse(localStorage.getItem("cartItems")) || [];
+    currentItems.push(price); // You can modify this to store more details if needed
+    localStorage.setItem("cartItems", JSON.stringify(currentItems));
+
+    alert('Item added to cart!'); // Feedback to the user
+    window.location.reload();
+
+  };
+
 
   const serviceData = {
     Implementations: [
@@ -21,6 +45,7 @@ const S4FinanceServicesSection = (params) => {
         responsibilities: "Analyze and optimize financial business processes using SAP S/4 HANA capabilities.",
         impact: "Streamlines operations, reduces costs, and improves productivity and financial reporting accuracy.",
         price: "$10,000-$40,000 per project",
+        amount: 10000,
         failure: "Failure to Optimize: Inefficient processes can persist, leading to higher operational costs, reduced competitiveness, and potential compliance issues."
       },
       {
@@ -29,6 +54,7 @@ const S4FinanceServicesSection = (params) => {
         responsibilities: "Manage data migration from legacy systems to SAP S/4 HANA, ensuring data integrity and seamless integration.",
         impact: "Facilitates accurate and efficient data transfer, maintaining business continuity and data accuracy.",
         price: "$10,000-$40,000 per project",
+        amount: 10000,
         failure: "Failure to Migrate Properly: Data loss or corruption can occur, disrupting business operations, decision-making, and leading to potential financial losses."
       },
       {
@@ -37,6 +63,7 @@ const S4FinanceServicesSection = (params) => {
         responsibilities: "Perform regular system upgrades and maintenance to keep the SAP S/4 HANA Finance system up-to-date.",
         impact: "Ensures the system remains secure, efficient, and compliant with the latest standards.",
         price: "$10,000-$40,000 per project",
+        amount: 10000,
         failure: "Failure to Maintain: Can result in system vulnerabilities, performance issues, and non-compliance with regulatory requirements."
       }
     ],
@@ -48,6 +75,7 @@ const S4FinanceServicesSection = (params) => {
         responsibilities: "Consolidate financial data from multiple systems into a single SAP S/4 HANA system.",
         impact: "Provides an integrated view of financial data across all business units, enabling more accurate and strategic decision-making.",
         price: "$25,000-$100,000 per project",
+        amount: 25000,
         failure: "Failure to Integrate: Can lead to data inconsistencies, fragmented reporting, and poor decision-making."
       },
       {
@@ -56,6 +84,7 @@ const S4FinanceServicesSection = (params) => {
         responsibilities: "Ensure all financial transactions are up-to-date in the central system, reflecting real-time operations.",
         impact: "Offers a real-time view of all financial transactions, facilitating faster insights and agile decision-making.",
         price: "$25,000-$100,000 per project",
+        amount: 25000,
         failure: "Failure to Replicate: Delays in data updates can result in outdated information, impacting the accuracy of financial reports and decisions."
       },
       {
@@ -64,6 +93,7 @@ const S4FinanceServicesSection = (params) => {
         responsibilities: "Synchronize charts of accounts, cost centers, and profit centers across different sources.",
         impact: "Maintains consistent and reliable financial data, reducing errors and improving reporting accuracy.",
         price: "$25,000-$100,000 per project",
+        amount: 25000,
         failure: "Failure to Harmonize: Inconsistent master data can lead to reporting errors, compliance issues, and operational inefficiencies."
       },
       {
@@ -72,6 +102,7 @@ const S4FinanceServicesSection = (params) => {
         responsibilities: "Streamline and centralize processes such as financial close and reporting procedures.",
         impact: "Enhances operational efficiencies and provides a unified financial view.",
         price: "$25,000-$100,000 per project",
+        amount: 25000,
         failure: "Failure to Consolidate: Disjointed reporting processes can cause delays, errors, and increased workload during financial close periods."
       },
       {
@@ -91,6 +122,7 @@ const S4FinanceServicesSection = (params) => {
         responsibilities: "Provide ongoing support to users post-implementation.",
         impact: "Ensures users have the help they need to resolve issues quickly, maintaining productivity.",
         price: "$25,000-$100,000 per project",
+        amount: 25000,
         failure: "Failure to Support: Can result in prolonged system issues, user frustration, and decreased productivity."
       },
       {
@@ -99,6 +131,8 @@ const S4FinanceServicesSection = (params) => {
         responsibilities: "Assess the training needs of different user groups within the organization.",
         impact: "Ensures that training programs are tailored to meet the specific needs of users, enhancing their ability to effectively use the system.",
         price: "$15,000-$50,000 per project",
+        amount: 15000,
+
         failure: "Failure to Analyze Needs: Can result in irrelevant or inadequate training, leading to poor user adoption and increased errors."
       },
       {
@@ -107,6 +141,8 @@ const S4FinanceServicesSection = (params) => {
         responsibilities: "Develop training materials, including manuals, e-learning modules, and hands-on exercises.",
         impact: "Provides users with comprehensive and accessible resources to learn the system.",
         price: "$15,000-$50,000 per project",
+        amount: 15000,
+
         failure: "Failure to Develop Quality Content: Can lead to confusion and frustration among users, reducing the effectiveness of the training."
       },
       {
@@ -115,6 +151,8 @@ const S4FinanceServicesSection = (params) => {
         responsibilities: "Conduct training sessions, workshops, and webinars for users.",
         impact: "Enhances user proficiency and confidence in using the system.",
         price: "$15,000-$50,000 per project",
+        amount: 15000,
+
         failure: "Failure to Instruct Effectively: Users may not fully grasp how to use the system, leading to operational inefficiencies and increased support requests."
       },
       {
@@ -123,10 +161,25 @@ const S4FinanceServicesSection = (params) => {
         responsibilities: "Collect and analyze feedback from users regarding the training and support they receive.",
         impact: "Helps improve training programs and support services based on user feedback.",
         price: "$5,000-$15,000 per project",
+        amount: 5000,
+
         failure: "Failure to Gather Feedback: Missed opportunities to enhance training and support, leading to persistent issues and user dissatisfaction."
       }
     ]
   };
+
+  const handleBuyNow = (price) => {
+    const user = auth.currentUser; // Assuming you're using Firebase Auth
+
+    if (user) {
+      // Redirect to payment page if the user is logged in
+      router.push(`/payment?price=${encodeURIComponent(price)}`); // Pass the price
+    } else {
+      // Redirect to login page if the user is not logged in
+      router.push('/login'); // Replace '/login' with your login page route
+    }
+  };
+
 
   const toggleAccordion = (title) => {
     setOpenAccordions((prev) => ({
@@ -161,6 +214,23 @@ const S4FinanceServicesSection = (params) => {
                     <p><strong>Price:</strong> {item.price}</p>
                   </div>
                 </div>
+              )}
+              {openAccordions[item.title] && (
+                <div className="mt-4 flex justify-end">
+                  <button
+                    onClick={() => handleBuyNow(item.amount)} // Pass the item price here
+                    className="bg-green-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-500 transition duration-200"
+                  >
+                    Buy Now
+                  </button>
+                  <button
+                    onClick={() => handleAddToCart(item.amount)} // Add to cart functionality
+                    className="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-500 transition duration-200"
+                  >
+                    Add to Cart
+                  </button>
+                </div>
+
               )}
             </div>
           ))}

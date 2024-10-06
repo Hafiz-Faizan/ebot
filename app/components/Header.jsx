@@ -13,10 +13,11 @@ import {
   CursorArrowRaysIcon,
 } from "@heroicons/react/24/outline";
 import DemoModal from "./HomePage/DemoModal";
-import { usePathname} from "next/navigation";
+import { usePathname } from "next/navigation";
 import Link from "next/link";
-
-
+import Profile from "./profile";
+import { auth } from "./firebase";
+import { useRouter } from "next/navigation";
 const services = [
   {
     name: "Financial Reporting",
@@ -36,7 +37,7 @@ const services = [
     href: "#",
     icon: LightBulbIcon,
   },
- 
+
 ];
 
 
@@ -138,9 +139,44 @@ export default function Header() {
   const [isPricingFinancialServiceOpen, setIsPricingFinancialServiceOpen] = useState(false); // Pricing dropdown for Financial Reporting
   const [isPricingTaxServiceOpen, setIsPricingTaxServiceOpen] = useState(false); // Pricing dropdown for Tax
   const [isPricingS4FinanceServiceOpen, setIsPricingS4FinanceServiceOpen] = useState(false); // Pricing dropdown for S/4 Finance
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [cartTotal, setCartTotal] = useState(0);
+  const router = useRouter(); // Initialize the router
+  useEffect(() => {
+    // Function to fetch the cart total from localStorage
+    const fetchCartTotal = () => {
+      const total = localStorage.getItem("cartTotal");
+      setCartTotal(total ? parseFloat(total) : 0);
+    };
+
+    // Fetch the cart total initially
+    fetchCartTotal();
+
+    // Add an event listener to listen for storage changes
+    window.addEventListener('storage', fetchCartTotal);
+
+    // Clean up the event listener on component unmount
+    return () => {
+      window.removeEventListener('storage', fetchCartTotal);
+    };
+  }, []);
+
+  const handleCartClick = () => {
+    // Redirect to payment page with total amount as a parameter
+    router.push(`/payment?price=${encodeURIComponent(cartTotal)}`);
+  };
+
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged((user) => {
+      setIsLoggedIn(!!user); // Set to true if user is logged in, false otherwise
+    });
+
+    // Clean up the subscription on unmount
+    return () => unsubscribe();
+  }, []);
 
   const pathname = usePathname();
- 
+
 
   useEffect(() => {
     // Keep the Financial Reporting dropdown open if the current route matches any of its subitems
@@ -178,8 +214,15 @@ export default function Header() {
           </Link>
         </div>
 
+
         <div className="flex lg:hidden">
-          <p className="text-black pr-8 font-bold">Sign In</p>
+          {isLoggedIn ? (
+            <div></div>
+          ) : (
+            <>
+              <p className="text-black pr-8 font-bold">Sign In</p>
+            </>
+          )}
           <button
             type="button"
             onClick={() => setMobileMenuOpen(true)}
@@ -189,7 +232,6 @@ export default function Header() {
             <Bars3Icon aria-hidden="true" className="h-6 w-6" />
           </button>
         </div>
-
         <div className="hidden lg:flex lg:gap-x-10">
           {/* Services Dropdown */}
           <Disclosure>
@@ -437,15 +479,28 @@ export default function Header() {
         </div>
 
         <div className="hidden lg:flex lg:flex-1 lg:justify-end">
-          <Link
-            href="/signup"
-            className="bg-main text-white rounded-lg py-2 px-4 text-sm font-semibold leading-6"
-          >
-            Get Started
-          </Link>
-          <Link href="/login" className="text-sm py-2 px-4 font-semibold leading-6 text-gray-900 ml-8">
-            Sign In
-          </Link>
+          {isLoggedIn ? (
+            <>   <div className="pr-10 items-center"> <button onClick={handleCartClick} className="relative">
+              <span className="text-lg font-bold ">Cart</span>
+              {cartTotal > 0 && (
+                <span className="absolute top-0 right-0 bg-red-500 text-white rounded-full px-1 text-xs">
+                  {cartTotal.toFixed(2)}$
+                </span>
+              )}
+            </button></div>  <Profile /></>
+          ) : (
+            <>
+              <Link
+                href="/signup"
+                className="bg-main text-white rounded-lg py-2 px-4 text-sm font-semibold leading-6"
+              >
+                Get Started
+              </Link>
+              <Link href="/login" className="text-sm py-2 px-4 font-semibold leading-6 text-gray-900 ml-8">
+                Sign In
+              </Link>
+            </>
+          )}
         </div>
       </nav>
 
@@ -531,10 +586,15 @@ export default function Header() {
               </a>
 
               <div className="bg-main py-2 px-6 rounded-lg">
-                <button onClick={openDemoModal} className="text-lg font-semibold leading-6 text-white ml-4">
-                  Get Started
-                </button>
+                {isLoggedIn ? (
+                  <Profile />
+                ) : (
+                  <button onClick={openDemoModal} className="text-lg font-semibold leading-6 text-white ml-4">
+                    Get Started
+                  </button>
+                )}
               </div>
+
             </div>
           </div>
         </Dialog.Panel>
