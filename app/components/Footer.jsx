@@ -11,7 +11,7 @@ const Footer = () => {
                             <h1 className="text-3xl font-bold">ebotCPA</h1>
                             <p className="text-sm">(305) 985-7740</p>
                         </div>
-                        <a href="#" className="mt-4 bg-white text-gray-900 px-4 py-2 rounded-md text-center">
+                        <a href="/login" className="mt-4 bg-white text-gray-900 px-4 py-2 rounded-md text-center">
                             Client Login
                         </a>
                     </div>

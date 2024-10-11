@@ -1,6 +1,7 @@
 'use client';
 import React, { useState } from 'react';
-import { auth } from "../../components/firebase";
+import { auth, db } from "../../components/firebase"; // Import Firestore
+import { doc, setDoc, getDoc, updateDoc, arrayUnion } from 'firebase/firestore'; // Firestore methods
 import { useRouter } from "next/navigation"; // Using Next.js router for navigation
 
 const S4FinanceServicesSection = (params) => {
@@ -8,175 +9,57 @@ const S4FinanceServicesSection = (params) => {
   const [openAccordions, setOpenAccordions] = useState({});
   const router = useRouter(); // Initialize the router
 
+  // Firestore Add to Cart Handler
+  const handleAddToCart = async (price, itemTitle) => {
+    const user = auth.currentUser; // Assuming you're using Firebase Auth
 
+    if (!user) {
+      alert("Please log in to add items to your cart.");
+      router.push('/login'); // Redirect to login page if not logged in
+      return;
+    }
 
-  const handleAddToCart = (price) => {
-    // Get the current cart total from localStorage
-    const currentCart = localStorage.getItem("cartTotal");
-    const newCartTotal = currentCart ? parseFloat(currentCart) + price : price;
+    const cartItem = {
+      title: itemTitle,
+      price: price,
+      addedAt: new Date().toISOString()
+    };
 
-    // Update the localStorage with the new cart total
-    localStorage.setItem("cartTotal", newCartTotal);
+    try {
+      // Reference the Firestore document for the user’s cart
+      const cartRef = doc(db, 'carts', user.uid);
+      const cartSnapshot = await getDoc(cartRef);
 
-    // Optional: Add the item details (if needed)
-    const currentItems = JSON.parse(localStorage.getItem("cartItems")) || [];
-    currentItems.push(price); // You can modify this to store more details if needed
-    localStorage.setItem("cartItems", JSON.stringify(currentItems));
+      if (cartSnapshot.exists()) {
+        // If the cart exists, update it by adding new items
+        await updateDoc(cartRef, {
+          items: arrayUnion(cartItem)
+        });
+      } else {
+        // If no cart exists, create a new cart document
+        await setDoc(cartRef, {
+          items: [cartItem]
+        });
+      }
 
-    alert('Item added to cart!'); // Feedback to the user
-    window.location.reload();
+      alert('Item added to cart!');
+      window.location.reload();
 
+    } catch (error) {
+      console.error("Error adding item to cart: ", error);
+      alert("Failed to add item to cart. Please try again.");
+    }
   };
 
-
-  const serviceData = {
-    Implementations: [
-      {
-        title: "System Implementation and Configuration",
-        description: "Responsibilities: Implement and configure SAP S/4 HANA Finance modules, such as Financial Accounting (FI) and Controlling (CO), to meet client-specific business requirements. This includes setting up modules, customizing functionalities, and ensuring seamless integration with other systems.",
-        responsibilities: "Implement and configure SAP S/4 HANA Finance modules, such as Financial Accounting (FI) and Controlling (CO), to meet client-specific business requirements.",
-        impact: "Ensures the system aligns with business processes, enhancing operational efficiency and accuracy.",
-        price: "$10,000-$40,000 per project",
-        failure: "Failure to Implement Correctly: Can lead to system inefficiencies, operational disruptions, and increased costs due to rework."
-      },
-      {
-        title: "Business Process Optimization",
-        description: "Responsibilities: Analyze and optimize financial business processes using SAP S/4 HANA capabilities.",
-        responsibilities: "Analyze and optimize financial business processes using SAP S/4 HANA capabilities.",
-        impact: "Streamlines operations, reduces costs, and improves productivity and financial reporting accuracy.",
-        price: "$10,000-$40,000 per project",
-        amount: 10000,
-        failure: "Failure to Optimize: Inefficient processes can persist, leading to higher operational costs, reduced competitiveness, and potential compliance issues."
-      },
-      {
-        title: "Data Migration and Integration",
-        description: "Responsibilities: Manage data migration from legacy systems to SAP S/4 HANA, ensuring data integrity and seamless integration.",
-        responsibilities: "Manage data migration from legacy systems to SAP S/4 HANA, ensuring data integrity and seamless integration.",
-        impact: "Facilitates accurate and efficient data transfer, maintaining business continuity and data accuracy.",
-        price: "$10,000-$40,000 per project",
-        amount: 10000,
-        failure: "Failure to Migrate Properly: Data loss or corruption can occur, disrupting business operations, decision-making, and leading to potential financial losses."
-      },
-      {
-        title: "System Upgrades and Maintenance",
-        description: "Responsibilities: Perform regular system upgrades and maintenance to keep the SAP S/4 HANA Finance system up-to-date.",
-        responsibilities: "Perform regular system upgrades and maintenance to keep the SAP S/4 HANA Finance system up-to-date.",
-        impact: "Ensures the system remains secure, efficient, and compliant with the latest standards.",
-        price: "$10,000-$40,000 per project",
-        amount: 10000,
-        failure: "Failure to Maintain: Can result in system vulnerabilities, performance issues, and non-compliance with regulatory requirements."
-      }
-    ],
-
-    "CentralFinance(CFIN)": [
-      {
-        title: "Data Integration",
-        description: "Responsibilities: Consolidate financial data from multiple systems into a single SAP S/4 HANA system.",
-        responsibilities: "Consolidate financial data from multiple systems into a single SAP S/4 HANA system.",
-        impact: "Provides an integrated view of financial data across all business units, enabling more accurate and strategic decision-making.",
-        price: "$25,000-$100,000 per project",
-        amount: 25000,
-        failure: "Failure to Integrate: Can lead to data inconsistencies, fragmented reporting, and poor decision-making."
-      },
-      {
-        title: "Real-time Replication",
-        description: "Responsibilities: Ensure all financial transactions are up-to-date in the central system, reflecting real-time operations.",
-        responsibilities: "Ensure all financial transactions are up-to-date in the central system, reflecting real-time operations.",
-        impact: "Offers a real-time view of all financial transactions, facilitating faster insights and agile decision-making.",
-        price: "$25,000-$100,000 per project",
-        amount: 25000,
-        failure: "Failure to Replicate: Delays in data updates can result in outdated information, impacting the accuracy of financial reports and decisions."
-      },
-      {
-        title: "Harmonization of Master Data",
-        description: "Responsibilities: Synchronize charts of accounts, cost centers, and profit centers across different sources.",
-        responsibilities: "Synchronize charts of accounts, cost centers, and profit centers across different sources.",
-        impact: "Maintains consistent and reliable financial data, reducing errors and improving reporting accuracy.",
-        price: "$25,000-$100,000 per project",
-        amount: 25000,
-        failure: "Failure to Harmonize: Inconsistent master data can lead to reporting errors, compliance issues, and operational inefficiencies."
-      },
-      {
-        title: "Consolidated Reporting and Centralized Financial Operations",
-        description: "Responsibilities: Streamline and centralize processes such as financial close and reporting procedures.",
-        responsibilities: "Streamline and centralize processes such as financial close and reporting procedures.",
-        impact: "Enhances operational efficiencies and provides a unified financial view.",
-        price: "$25,000-$100,000 per project",
-        amount: 25000,
-        failure: "Failure to Consolidate: Disjointed reporting processes can cause delays, errors, and increased workload during financial close periods."
-      },
-      {
-        title: "Non-Disruptive Implementation",
-        description: "Responsibilities: Implement CFIN with minimal disturbance to existing operations while transitioning to SAP S/4 HANA.",
-        responsibilities: "Implement CFIN with minimal disturbance to existing operations while transitioning to SAP S/4 HANA.",
-        impact: "Facilitates a smooth transition to SAP S/4 HANA, offering scalability and future-proofing financial systems.",
-        price: "Contact for pricing",
-        failure: "Failure to Implement Smoothly: Disruptions during implementation can lead to operational downtime, user resistance, and increased transition costs."
-      }
-    ],
-
-    SupportandTraining: [
-      {
-        title: "User Support Specialist",
-        description: "Responsibilities: Provide ongoing support to users post-implementation.",
-        responsibilities: "Provide ongoing support to users post-implementation.",
-        impact: "Ensures users have the help they need to resolve issues quickly, maintaining productivity.",
-        price: "$25,000-$100,000 per project",
-        amount: 25000,
-        failure: "Failure to Support: Can result in prolonged system issues, user frustration, and decreased productivity."
-      },
-      {
-        title: "Training Needs Analyst",
-        description: "Responsibilities: Assess the training needs of different user groups within the organization.",
-        responsibilities: "Assess the training needs of different user groups within the organization.",
-        impact: "Ensures that training programs are tailored to meet the specific needs of users, enhancing their ability to effectively use the system.",
-        price: "$15,000-$50,000 per project",
-        amount: 15000,
-
-        failure: "Failure to Analyze Needs: Can result in irrelevant or inadequate training, leading to poor user adoption and increased errors."
-      },
-      {
-        title: "Training Content Developer",
-        description: "Responsibilities: Develop training materials, including manuals, e-learning modules, and hands-on exercises.",
-        responsibilities: "Develop training materials, including manuals, e-learning modules, and hands-on exercises.",
-        impact: "Provides users with comprehensive and accessible resources to learn the system.",
-        price: "$15,000-$50,000 per project",
-        amount: 15000,
-
-        failure: "Failure to Develop Quality Content: Can lead to confusion and frustration among users, reducing the effectiveness of the training."
-      },
-      {
-        title: "Training Instructor",
-        description: "Responsibilities: Conduct training sessions, workshops, and webinars for users.",
-        responsibilities: "Conduct training sessions, workshops, and webinars for users.",
-        impact: "Enhances user proficiency and confidence in using the system.",
-        price: "$15,000-$50,000 per project",
-        amount: 15000,
-
-        failure: "Failure to Instruct Effectively: Users may not fully grasp how to use the system, leading to operational inefficiencies and increased support requests."
-      },
-      {
-        title: "Feedback Coordinator",
-        description: "Responsibilities: Collect and analyze feedback from users regarding the training and support they receive.",
-        responsibilities: "Collect and analyze feedback from users regarding the training and support they receive.",
-        impact: "Helps improve training programs and support services based on user feedback.",
-        price: "$5,000-$15,000 per project",
-        amount: 5000,
-
-        failure: "Failure to Gather Feedback: Missed opportunities to enhance training and support, leading to persistent issues and user dissatisfaction."
-      }
-    ]
-  };
-
-  const handleBuyNow = (price) => {
+  const handleBuyNow = (price, itemTitle) => {
     const user = auth.currentUser; // Assuming you're using Firebase Auth
 
     if (user) {
-      // Redirect to payment page if the user is logged in
-      router.push(`/payment?price=${encodeURIComponent(price)}`); // Pass the price
+      // Pass both price and itemTitle to the payment page
+      router.push(`/payment?price=${encodeURIComponent(price)}&service=${encodeURIComponent(itemTitle)}`);
     } else {
       // Redirect to login page if the user is not logged in
-      router.push('/login'); // Replace '/login' with your login page route
+      router.push("/login");
     }
   };
 
@@ -187,6 +70,143 @@ const S4FinanceServicesSection = (params) => {
       [title]: !prev[title]
     }));
   };
+
+  const serviceData = {
+    Implementations: [
+      {
+        title: "System Implementation and Configuration",
+        description: "Implement and configure SAP S/4 HANA Finance modules, such as Financial Accounting (FI) and Controlling (CO), to meet client-specific business requirements.",
+        responsibilities: "Implement and configure SAP S/4 HANA Finance modules.",
+        impact: "Ensures the system aligns with business processes, enhancing operational efficiency and accuracy.",
+        price: "$10,000-$40,000 per project",
+        amount: 10000,
+        failure: "Failure to implement correctly can lead to system inefficiencies, operational disruptions, and increased costs due to rework."
+      },
+      {
+        title: "Business Process Optimization",
+        description: "Analyze and optimize financial business processes using SAP S/4 HANA capabilities.",
+        responsibilities: "Analyze and optimize financial business processes.",
+        impact: "Streamlines operations, reduces costs, and improves productivity and financial reporting accuracy.",
+        price: "$10,000-$40,000 per project",
+        amount: 10000,
+        failure: "Failure to optimize can result in inefficient processes, higher operational costs, and compliance issues."
+      },
+      {
+        title: "Data Migration and Integration",
+        description: "Manage data migration from legacy systems to SAP S/4 HANA, ensuring data integrity and seamless integration.",
+        responsibilities: "Ensure accurate data migration and integration.",
+        impact: "Facilitates accurate and efficient data transfer, maintaining business continuity.",
+        price: "$10,000-$40,000 per project",
+        amount: 10000,
+        failure: "Data loss or corruption during migration can disrupt operations and result in financial losses."
+      },
+      {
+        title: "System Upgrades and Maintenance",
+        description: "Perform regular system upgrades and maintenance to keep the SAP S/4 HANA Finance system up-to-date.",
+        responsibilities: "Maintain and upgrade SAP S/4 HANA Finance system.",
+        impact: "Ensures system security, efficiency, and compliance with the latest standards.",
+        price: "$10,000-$40,000 per project",
+        amount: 10000,
+        failure: "Failure to maintain the system can result in vulnerabilities and performance issues."
+      }
+    ],
+  
+    "CentralFinance(CFIN)": [
+      {
+        title: "Data Integration",
+        description: "Consolidate financial data from multiple systems into a single SAP S/4 HANA system.",
+        responsibilities: "Ensure financial data integration across all business units.",
+        impact: "Provides an integrated view of financial data for better decision-making.",
+        price: "$25,000-$100,000 per project",
+        amount: 25000,
+        failure: "Failure to integrate data properly can lead to inconsistencies and fragmented reporting."
+      },
+      {
+        title: "Real-time Replication",
+        description: "Ensure all financial transactions are up-to-date in the central system, reflecting real-time operations.",
+        responsibilities: "Ensure real-time replication of financial transactions.",
+        impact: "Provides a real-time view of transactions, enabling faster insights.",
+        price: "$25,000-$100,000 per project",
+        amount: 25000,
+        failure: "Delays in data replication can result in outdated information and inaccurate reports."
+      },
+      {
+        title: "Harmonization of Master Data",
+        description: "Synchronize charts of accounts, cost centers, and profit centers across different sources.",
+        responsibilities: "Ensure the harmonization of financial master data.",
+        impact: "Maintains consistent and reliable financial data, reducing errors.",
+        price: "$25,000-$100,000 per project",
+        amount: 25000,
+        failure: "Inconsistent master data can lead to reporting errors and compliance issues."
+      },
+      {
+        title: "Consolidated Reporting and Centralized Financial Operations",
+        description: "Streamline and centralize financial close and reporting procedures.",
+        responsibilities: "Ensure accurate and efficient consolidated reporting.",
+        impact: "Enhances operational efficiencies and provides a unified financial view.",
+        price: "$25,000-$100,000 per project",
+        amount: 25000,
+        failure: "Failure to consolidate can cause delays, errors, and increased workload during financial close."
+      },
+      {
+        title: "Non-Disruptive Implementation",
+        description: "Implement CFIN with minimal disturbance to existing operations while transitioning to SAP S/4 HANA.",
+        responsibilities: "Ensure smooth implementation of CFIN.",
+        impact: "Facilitates a smooth transition to SAP S/4 HANA, offering scalability and future-proofing.",
+        price: "Contact for pricing",
+        failure: "Disruptions during implementation can lead to downtime and increased transition costs."
+      }
+    ],
+  
+    SupportandTraining: [
+      {
+        title: "User Support Specialist",
+        description: "Provide ongoing support to users post-implementation.",
+        responsibilities: "Offer support to ensure smooth system operations.",
+        impact: "Ensures that users have the help they need to resolve issues quickly, maintaining productivity.",
+        price: "$25,000-$100,000 per project",
+        amount: 25000,
+        failure: "Lack of user support can lead to prolonged system issues and decreased productivity."
+      },
+      {
+        title: "Training Needs Analyst",
+        description: "Assess the training needs of different user groups within the organization.",
+        responsibilities: "Identify and address specific training needs.",
+        impact: "Ensures effective training tailored to user needs.",
+        price: "$15,000-$50,000 per project",
+        amount: 15000,
+        failure: "Failure to analyze training needs can lead to inadequate or irrelevant training."
+      },
+      {
+        title: "Training Content Developer",
+        description: "Develop training materials, including manuals, e-learning modules, and hands-on exercises.",
+        responsibilities: "Create comprehensive training content for users.",
+        impact: "Provides users with the necessary resources to learn the system effectively.",
+        price: "$15,000-$50,000 per project",
+        amount: 15000,
+        failure: "Poorly developed content can confuse users and reduce training effectiveness."
+      },
+      {
+        title: "Training Instructor",
+        description: "Conduct training sessions, workshops, and webinars for users.",
+        responsibilities: "Deliver effective training sessions to users.",
+        impact: "Enhances user proficiency in using the system.",
+        price: "$15,000-$50,000 per project",
+        amount: 15000,
+        failure: "Ineffective training can lead to operational inefficiencies."
+      },
+      {
+        title: "Feedback Coordinator",
+        description: "Collect and analyze feedback from users regarding the training and support they receive.",
+        responsibilities: "Gather user feedback to improve training programs.",
+        impact: "Helps enhance training programs based on feedback.",
+        price: "$5,000-$15,000 per project",
+        amount: 5000,
+        failure: "Failure to gather feedback can result in missed opportunities for improvement."
+      }
+    ]
+  };
+  
 
   return (
     <main>
@@ -207,8 +227,6 @@ const S4FinanceServicesSection = (params) => {
                 <div className="pl-4 mt-2 flex justify-between items-center">
                   <div>
                     <p>{item.description}</p>
-                    <p><strong>Responsibilities:</strong> {item.responsibilities}</p>
-                    <p><strong>Impact:</strong> {item.impact}</p>
                   </div>
                   <div className="w-3/4 text-right">
                     <p><strong>Price:</strong> {item.price}</p>
@@ -218,19 +236,18 @@ const S4FinanceServicesSection = (params) => {
               {openAccordions[item.title] && (
                 <div className="mt-4 flex justify-end">
                   <button
-                    onClick={() => handleBuyNow(item.amount)} // Pass the item price here
+                    onClick={() => handleBuyNow(item.amount, item.title)} // Pass the item price here
                     className="bg-green-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-500 transition duration-200"
                   >
                     Buy Now
                   </button>
                   <button
-                    onClick={() => handleAddToCart(item.amount)} // Add to cart functionality
+                    onClick={() => handleAddToCart(item.amount, item.title)} // Add to cart functionality
                     className="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-500 transition duration-200"
                   >
                     Add to Cart
                   </button>
                 </div>
-
               )}
             </div>
           ))}

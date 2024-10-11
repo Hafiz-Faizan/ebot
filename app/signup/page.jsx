@@ -30,33 +30,31 @@ export default function Signup() {
         await setDoc(doc(db, "Users", user.uid), {
           firstName: firstName,
           lastName: lastName,
-          email: user.email,  // Use the email from the authenticated user
+          email: user.email,
           company: company,
-          createdAt: new Date(), // Optionally add a timestamp for account creation
+          createdAt: new Date(),
         });
       }
 
-      router.push("/dashboard"); // redirect after signup
+      router.push("/dashboard");
     } catch (err) {
-      setError(err.message); // Display detailed Firebase error message
+      setError(err.message);
       toast.error(err.message)
-      console.log(err); // Log error in console for debugging
-
+      console.log(err);
     } finally {
       setLoading(false);
-      console.log("in finalyy ")
-
+      console.log("in finally")
     }
   };
 
   return (
-    <div className="flex h-screen">
-      {/* Left Side - Sign Up Form */}
-      <div className="flex flex-col justify-center w-1/2 px-8 bg-gray-50">
+    <div className="flex min-h-screen">
+      {/* Sign Up Form - Full width on mobile, half width on larger screens */}
+      <div className="flex flex-col justify-center w-full px-4 sm:px-6 md:px-8 lg:w-1/2 bg-gray-50">
         <h2 className="text-center text-xl text-gray-600 mb-2">Create new account!</h2>
         <h1 className="text-center text-2xl font-bold text-black mb-6">Sign up as accountant</h1>
         <form onSubmit={handleSignup} className="space-y-4">
-          <div className="flex space-x-4">
+          <div className="flex flex-col sm:flex-row sm:space-x-4 space-y-4 sm:space-y-0">
             <input
               type="text"
               placeholder="First name"
@@ -116,12 +114,12 @@ export default function Signup() {
         </form>
         {error && <p className="mt-4 text-center text-sm text-red-600">{error}</p>}
         <p className="mt-4 text-center text-sm">
-          Already have an account? <a href="#" className="text-blue-600 hover:underline">Log in</a>
+          Already have an account? <a href="/login" className="text-blue-600 hover:underline">Log in</a>
         </p>
       </div>
 
-      {/* Right Side - Image */}
-      <div className="w-1/2 bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
+      {/* Image - Hidden on mobile, visible on larger screens */}
+      <div className="hidden lg:block w-1/2 bg-gradient-to-r from-blue-500 to-purple-600">
         <img
           src="/logo.jpg"
           alt="Sign Up Image"

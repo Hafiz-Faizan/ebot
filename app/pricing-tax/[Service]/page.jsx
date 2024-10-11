@@ -1,50 +1,72 @@
-'use client';
+"use client"; // Ensure it's a Client Component
+
 import { useState } from "react";
 import TaxClosingStatement from "../../components/TaxClosingStatement";
-import { auth } from "../../components/firebase";
+import { auth, db } from "../../components/firebase"; // Ensure this path is correct
 import { useRouter } from "next/navigation"; // Using Next.js router for navigation
+import { doc, updateDoc, getDoc, setDoc, arrayUnion } from "firebase/firestore"; // Firestore methods
 
 const TaxServiceSection = (params) => {
-  const service = (params.params.Service);
+  const service = params.params.Service;
   const [openAccordions, setOpenAccordions] = useState({});
   const router = useRouter(); // Initialize the router
 
+  // Firestore Add to Cart Handler
+  const handleAddToCart = async (price, itemTitle) => {
+    const user = auth.currentUser;
 
+    if (!user) {
+      alert("Please log in to add items to your cart.");
+      router.push('/login'); // Redirect to login page if not logged in
+      return;
+    }
 
-  const handleAddToCart = (price) => {
-    // Get the current cart total from localStorage
-    const currentCart = localStorage.getItem("cartTotal");
-    const newCartTotal = currentCart ? parseFloat(currentCart) + price : price;
+    const cartItem = {
+      title: itemTitle,
+      price: price,
+      addedAt: new Date().toISOString(),
+    };
 
-    // Update the localStorage with the new cart total
-    localStorage.setItem("cartTotal", newCartTotal);
+    try {
+      // Reference the Firestore document for the user’s cart
+      const cartRef = doc(db, 'carts', user.uid);
+      const cartSnapshot = await getDoc(cartRef);
 
-    // Optional: Add the item details (if needed)
-    const currentItems = JSON.parse(localStorage.getItem("cartItems")) || [];
-    currentItems.push(price); // You can modify this to store more details if needed
-    localStorage.setItem("cartItems", JSON.stringify(currentItems));
+      if (cartSnapshot.exists()) {
+        // If the cart exists, update it by adding new items using arrayUnion
+        await updateDoc(cartRef, {
+          items: arrayUnion(cartItem), // Add the new item without overwriting existing ones
+        });
+      } else {
+        // If no cart exists, create a new cart document with the first item
+        await setDoc(cartRef, {
+          items: [cartItem],
+        });
+      }
 
-    alert('Item added to cart!'); // Feedback to the user
-    window.location.reload();
-
+      alert('Item added to cart!');
+    } catch (error) {
+      console.error("Error adding item to cart: ", error);
+      alert("Failed to add item to cart. Please try again.");
+    }
   };
 
-  const handleBuyNow = (price) => {
+  const handleBuyNow = (price, itemTitle) => {
     const user = auth.currentUser; // Assuming you're using Firebase Auth
 
     if (user) {
-      // Redirect to payment page if the user is logged in
-      router.push(`/payment?price=${encodeURIComponent(price)}`); // Pass the price
+      // Pass both price and itemTitle to the payment page
+      router.push(`/payment?price=${encodeURIComponent(price)}&service=${encodeURIComponent(itemTitle)}`);
     } else {
       // Redirect to login page if the user is not logged in
-      router.push('/login'); // Replace '/login' with your login page route
+      router.push("/login");
     }
   };
 
   const toggleAccordion = (title) => {
     setOpenAccordions((prev) => ({
       ...prev,
-      [title]: !prev[title]
+      [title]: !prev[title],
     }));
   };
 
@@ -226,7 +248,6 @@ const TaxServiceSection = (params) => {
         <div className="max-w-6xl">
           {serviceData[service]?.map((item) => (
             <div key={item.title} className="border-b pb-4 mb-4">
-
               <h2
                 className="text-xl font-bold cursor-pointer flex items-center justify-between"
                 onClick={() => toggleAccordion(item.title)}
@@ -248,24 +269,25 @@ const TaxServiceSection = (params) => {
                   </div>
                 </div>
               )}
+
               {openAccordions[item.title] && (
                 <div className="mt-4 flex justify-end">
                   <button
-                    onClick={() => handleBuyNow(item.amount)} // Pass the item price here
+                    onClick={() => handleBuyNow(item.amount, item.title)} // Pass the item price here
                     className="bg-green-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-500 transition duration-200"
                   >
                     Buy Now
                   </button>
                   <button
-                    onClick={() => handleAddToCart(item.amount)} // Add to cart functionality
+                    onClick={() => handleAddToCart(item.amount, item.title)} // Add to cart functionality
                     className="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-500 transition duration-200"
                   >
                     Add to Cart
                   </button>
                 </div>
-
               )}
-            </div>))}
+            </div>
+          ))}
         </div>
       </div>
 
