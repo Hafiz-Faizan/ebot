@@ -10,8 +10,8 @@ export default function PaymentPage() {
     const router = useRouter();
     const [price, setPrice] = useState(0);
     const [service, setService] = useState("");
-    const appId = "sandbox-sq0idb-n7buUwWAV3R0rXWd5TQq5g";
-    const locationId = "main";
+    const appId = "sandbox-sq0idb-g7eu3BHJ_ZDq-PynONKeXg";
+    const locationId = "LYYY791MFQZBZ";
 
     useEffect(() => {
         const query = new URLSearchParams(window.location.search);

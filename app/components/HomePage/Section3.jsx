@@ -8,15 +8,15 @@ const Section3 = () => {
                 <div className="absolute inset-0 bg-black bg-opacity-40 rounded-lg"></div> {/* Optional overlay for contrast */}
                 <div className="relative z-10 flex flex-col sm:flex-row items-center justify-between p-6 text-center">
                     <div className="text-white max-w-2xl mb-4 sm:mb-0 sm:text-left">
-                        <h2 className="text-2xl md:text-4xl font-bold mb-4">See How Corvee Can Help You Save Your Clients Money</h2>
+                        <h2 className="text-2xl md:text-4xl font-bold mb-4">See How ebotCPA can help solve your tax problem expeditiously. </h2>
 
                     </div>
-                    <a
+                    {/* <a
                         href="#learn-more"
                         className="text-lg font-bold px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition mt-4 sm:mt-0"
                     >
                         Get a Demo
-                    </a>
+                    </a> */}
                 </div>
             </section>
         </div>

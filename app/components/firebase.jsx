@@ -4,12 +4,13 @@ import { getAuth } from "firebase/auth"; // Corrected the import
 import { getFirestore } from "firebase/firestore"; // Corrected the import
 // Your web app's Firebase configuration
 const firebaseConfig = {
-    apiKey: "AIzaSyCMIWjG4Shdd4V73Z_I0RJJcEb9dLlQcus",
-    authDomain: "ecbot-b75e4.firebaseapp.com",
-    projectId: "ecbot-b75e4",
-    storageBucket: "ecbot-b75e4.appspot.com",
-    messagingSenderId: "839721775787",
-    appId: "1:839721775787:web:978ac0088fe357747bfdee"
+    apiKey: "AIzaSyBfO8a6Yqvr9LZuI_S3WnBlKqRx3nmqMBg",
+    authDomain: "ebot-6a534.firebaseapp.com",
+    projectId: "ebot-6a534",
+    storageBucket: "ebot-6a534.appspot.com",
+    messagingSenderId: "253450411753",
+    appId: "1:253450411753:web:5b7b97e288f3da6af95a78",
+    measurementId: "G-LW7FW281MH"
 };
 
 // Initialize Firebase

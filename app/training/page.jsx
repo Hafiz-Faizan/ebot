@@ -2,11 +2,15 @@
 import React, { useState } from "react";
 import { BookOpen, DollarSign, MapPin } from "lucide-react";
 import { auth, db } from "../components/firebase";
-import { collection, addDoc } from "firebase/firestore";
+import { collection, addDoc, doc, setDoc, updateDoc, arrayUnion } from "firebase/firestore";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { CreditCard, PaymentForm } from "react-square-web-payments-sdk";
+import { submitPayment } from "../actions/actions";
+import { useRouter } from "next/navigation";
 
 const TrainingPage = () => {
+  const router = useRouter();
   const [selectedCourse, setSelectedCourse] = useState("Tax Planning");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [formData, setFormData] = useState({
@@ -17,8 +21,12 @@ const TrainingPage = () => {
   });
   const [isLoading, setIsLoading] = useState(false);
   const [expandedSection, setExpandedSection] = useState(null);
+  const [showPayment, setShowPayment] = useState(false);
 
   const courses = ["Tax Planning", "Tax Resolution", "Tax Compliance"];
+  const price = 1000; // Course price in dollars
+  const appId = "sandbox-sq0idb-n7buUwWAV3R0rXWd5TQq5g";
+  const locationId = "main";
 
   const content = {
     "Tax Planning": [
@@ -595,19 +603,51 @@ const TrainingPage = () => {
       if (!user) {
         throw new Error("Please log in to register.");
       }
-      await addDoc(collection(db, "registrations"), {
-        ...formData,
-        userId: user.uid,
-        timestamp: new Date().toISOString(),
-      });
-      toast.success("Registration successful!");
-      setIsModalOpen(false);
-      setFormData({ name: "", email: user.email, phone: "", address: "" });
+      setShowPayment(true);
     } catch (error) {
-      toast.error(error.message || "Error registering. Please try again.");
-      console.error("Error adding document: ", error);
+      toast.error(error.message || "Error processing registration. Please try again.");
+      console.error("Error processing registration: ", error);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handlePaymentSuccess = async (token, paymentResult) => {
+    const user = auth.currentUser;
+
+    if (user) {
+      try {
+        await addDoc(collection(db, "registrations"), {
+          ...formData,
+          userId: user.uid,
+          course: selectedCourse,
+          timestamp: new Date().toISOString(),
+        });
+
+        const purchaseRef = doc(db, 'purchases', user.uid);
+        const purchaseData = {
+          service: selectedCourse +" course",
+          price: price,
+          paymentToken: token,
+          paymentResult,
+          purchasedAt: new Date().toISOString(),
+        };
+
+        await setDoc(purchaseRef, {
+          items: arrayUnion(purchaseData)
+        }, { merge: true });
+
+        toast.success("Registration and payment successful!");
+        setIsModalOpen(false);
+        setFormData({ name: "", email: user.email, phone: "", address: "" });
+        setShowPayment(false);
+        router.push("/dashboard");
+      } catch (error) {
+        toast.error("Error saving registration and purchase. Please try again.");
+        console.error("Error saving to Firestore: ", error);
+      }
+    } else {
+      toast.error("User not logged in");
     }
   };
 
@@ -618,7 +658,6 @@ const TrainingPage = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-100 to-purple-100 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-4xl mx-auto">
-        {/* Header */}
         <div className="bg-gradient-to-r from-indigo-600 to-purple-600 px-6 py-8 sm:px-10 rounded-xl shadow-lg mb-8">
           <h1 className="text-4xl font-extrabold text-white mb-2">MASTER CLASS</h1>
           <p className="text-2xl font-semibold text-indigo-100">TAX CONSULTANT TRAINING</p>
@@ -627,7 +666,6 @@ const TrainingPage = () => {
           </p>
         </div>
 
-        {/* Course Selection */}
         <div className="flex justify-around mb-6">
           {courses.map((course) => (
             <button
@@ -642,7 +680,6 @@ const TrainingPage = () => {
           ))}
         </div>
 
-        {/* Content Section */}
         <div className="bg-white rounded-xl shadow-2xl overflow-hidden">
           <div className="px-6 py-8 sm:px-10">
             <h2 className="text-3xl font-bold text-gray-900 mb-6">
@@ -675,7 +712,7 @@ const TrainingPage = () => {
                   <DollarSign className="h-6 w-6 mr-2 text-indigo-600" />
                   Fees
                 </h3>
-                <p className="text-3xl font-bold text-indigo-600">$1,000</p>
+                <p className="text-3xl font-bold text-indigo-600">${price}</p>
               </div>
               <button
                 onClick={() => setIsModalOpen(true)}
@@ -701,81 +738,102 @@ const TrainingPage = () => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-lg p-8 max-w-md w-full">
             <h2 className="text-2xl font-bold mb-4 text-indigo-800">Register for the Master Class</h2>
-            <form onSubmit={handleSubmit}>
-              <div className="space-y-4">
-                <div>
-                  <label htmlFor="name" className="block text-sm font-medium text-gray-700">
-                    Full Name
-                  </label>
-                  <input
-                    type="text"
-                    id="name"
-                    name="name"
-                    value={formData.name}
-                    onChange={handleInputChange}
-                    required
-                    className="mt-1 block w-full rounded-md border-gray-300 border shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 px-3 py-2"
-                  />
+            {!showPayment ? (
+              <form onSubmit={handleSubmit}>
+                <div className="space-y-4">
+                  <div>
+                    <label htmlFor="name" className="block text-sm font-medium text-gray-700">
+                      Full Name
+                    </label>
+                    <input
+                      type="text"
+                      id="name"
+                      name="name"
+                      value={formData.name}
+                      onChange={handleInputChange}
+                      required
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                      Email
+                    </label>
+                    <input
+                      type="email"
+                      id="email"
+                      name="email"
+                      value={formData.email}
+                      onChange={handleInputChange}
+                      required
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
+                      Phone
+                    </label>
+                    <input
+                      type="tel"
+                      id="phone"
+                      name="phone"
+                      value={formData.phone}
+                      onChange={handleInputChange}
+                      required
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="address" className="block text-sm font-medium text-gray-700">
+                      Address
+                    </label>
+                    <textarea
+                      id="address"
+                      name="address"
+                      value={formData.address}
+                      onChange={handleInputChange}
+                      required
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+                    ></textarea>
+                  </div>
                 </div>
-                <div>
-                  <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                    Email
-                  </label>
-                  <input
-                    type="email"
-                    id="email"
-                    name="email"
-                    value={formData.email}
-                    onChange={handleInputChange}
-                    required
-                    className="mt-1 block w-full rounded-md border-gray-300 border shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 px-3 py-2"
-                  />
+                <div className="mt-6 flex justify-end space-x-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsModalOpen(false)}
+                    className="px-4 py-2 bg-gray-300 text-gray-700 font-semibold rounded-lg shadow-md hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-75 transition duration-300"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isLoading}
+                    className="px-4 py-2 bg-indigo-600 text-white font-semibold rounded-lg shadow-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-75 transition duration-300 disabled:opacity-50"
+                  >
+                    {isLoading ? "Processing..." : "Proceed to Payment"}
+                  </button>
                 </div>
-                <div>
-                  <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
-                    Phone
-                  </label>
-                  <input
-                    type="tel"
-                    id="phone"
-                    name="phone"
-                    value={formData.phone}
-                    onChange={handleInputChange}
-                    required
-                    className="mt-1 block w-full rounded-md border-gray-300 border shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 px-3 py-2"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="address" className="block text-sm font-medium text-gray-700">
-                    Address
-                  </label>
-                  <textarea
-                    id="address"
-                    name="address"
-                    value={formData.address}
-                    onChange={handleInputChange}
-                    required
-                    className="mt-1 block w-full rounded-md border-gray-300 border shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 px-3 py-2"
-                  ></textarea>
-                </div>
-              </div>
-              <div className="mt-6 flex justify-end space-x-2">
-                <button
-                  type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 bg-gray-300 text-gray-700 font-semibold rounded-lg shadow-md hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-75 transition duration-300"
+              </form>
+            ) : (
+              <div>
+                <h3 className="text-xl font-semibold mb-4">Complete Your Payment</h3>
+                <p className="mb-4">Total: ${price.toFixed(2)}</p>
+                <PaymentForm
+                  applicationId={appId}
+                  locationId={locationId}
+                  cardTokenizeResponseReceived={async (token) => {
+                    const result = await submitPayment(token.token, price * 100);
+                    if (result.payment.status === "COMPLETED") {
+                      handlePaymentSuccess(token.token, result);
+                    } else {
+                      toast.error("Payment failed. Please try again.");
+                    }
+                  }}
                 >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isLoading}
-                  className="px-4 py-2 bg-indigo-600 text-white font-semibold rounded-lg shadow-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-75 transition duration-300 disabled:opacity-50"
-                >
-                  {isLoading ? "Submitting..." : "Submit"}
-                </button>
+                  <CreditCard />
+                </PaymentForm>
               </div>
-            </form>
+            )}
           </div>
         </div>
       )}
